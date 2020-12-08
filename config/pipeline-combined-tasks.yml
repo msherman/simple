@@ -1,0 +1,90 @@
+resources:
+  - name: simple-repo
+    type: git
+    source:
+      uri: https://github.com/msherman/simple.git
+      branch: master
+
+jobs:
+  - name: frontend-lint-test
+    plan:
+      - get: simple-repo
+        trigger: true
+      - task: run-linter
+        file: simple-repo/config/jobs/run-frontend-tests.yml
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: backend-tests
+    plan:
+      - get: simple-repo
+        trigger: true
+      - task: run-unit-tests
+        file: simple-repo/config/jobs/no-op.yml
+      - task: run-integration-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: sonarqube
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [frontend-lint-test, backend-tests]
+      - task: frontend-sonarqube
+        file: simple-repo/config/jobs/no-op.yml
+      - task: backend-sonarqube
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: docker-image
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [frontend-lint-test, backend-tests]
+      - task: build-frontend-image
+        file: simple-repo/config/jobs/no-op.yml
+      - task: push-to-image-repo
+        file: simple-repo/config/jobs/no-op.yml
+      - task: build-backend-image
+        file: simple-repo/config/jobs/no-op.yml
+      - task: push-to-image-repo
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: twistlock
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [docker-image]
+      - task: run-frontend-tests
+        file: simple-repo/config/jobs/no-op.yml
+      - task: run-frontend-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: deploy-dev
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [docker-image]
+      - task: deploy
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: run-functional-tests
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [deploy-dev]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: deploy-test
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [deploy-dev, run-functional-tests, twistlock, sonarqube]
+      - task: deploy
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: deploy-prod
+    plan:
+      - get: simple-repo
+        passed: [deploy-test]
+      - task: deploy
+        file: simple-repo/config/jobs/no-op.yml

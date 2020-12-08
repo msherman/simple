@@ -1,0 +1,68 @@
+resources:
+  - name: simple-repo
+    type: git
+    source:
+      uri: https://github.com/msherman/simple.git
+      branch: master
+
+jobs:
+  - name: frontend-linter
+    plan:
+      - get: simple-repo
+        trigger: true
+      - task: run-linter
+        file: simple-repo/config/jobs/run-frontend-tests.yml
+
+  - name: frontend-tests
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [frontend-linter]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: backend-unit-tests
+    plan:
+      - get: simple-repo
+        passed: [frontend-tests]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: backend-integration-tests
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [backend-unit-tests]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: deploy-dev
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [backend-integration-tests]
+      - task: deploy
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: run-functional-tests
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [deploy-dev]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: deploy-test
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [run-functional-tests]
+      - task: deploy
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: deploy-prod
+    plan:
+      - get: simple-repo
+        passed: [deploy-test]
+      - task: deploy
+        file: simple-repo/config/jobs/no-op.yml

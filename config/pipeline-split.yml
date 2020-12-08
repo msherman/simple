@@ -1,0 +1,120 @@
+resources:
+  - name: simple-repo
+    type: git
+    source:
+      uri: https://github.com/msherman/simple.git
+      branch: master
+
+jobs:
+  - name: frontend-linter
+    plan:
+      - get: simple-repo
+        trigger: true
+      - task: run-linter
+        file: simple-repo/config/jobs/run-frontend-tests.yml
+
+  - name: frontend-tests
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [frontend-linter]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: frontend-sonarqube
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [frontend-tests]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: frontend-docker-image
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [frontend-tests]
+      - task: build-image
+        file: simple-repo/config/jobs/no-op.yml
+      - task: push-to-image-repo
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: frontend-twistlock
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [frontend-docker-image]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: backend-unit-tests
+    plan:
+      - get: simple-repo
+        trigger: true
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: backend-integration-tests
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [backend-unit-tests]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: backend-sonarqube
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [backend-integration-tests]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: backend-docker-image
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [backend-integration-tests]
+      - task: build-image
+        file: simple-repo/config/jobs/no-op.yml
+      - task: push-to-image-repo
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: backend-twistlock
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [backend-docker-image]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: deploy-dev
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [backend-docker-image, frontend-docker-image]
+      - task: deploy
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: run-functional-tests
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [deploy-dev]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: deploy-test
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [deploy-dev, run-functional-tests, backend-twistlock, frontend-twistlock, backend-sonarqube, frontend-sonarqube]
+      - task: deploy
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: deploy-prod
+    plan:
+      - get: simple-repo
+        passed: [deploy-test]
+      - task: deploy
+        file: simple-repo/config/jobs/no-op.yml

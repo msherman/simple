@@ -6,9 +6,15 @@ resources:
       branch: master
 
 jobs:
-  - name: run-frontend-tests
-    public: true
+  - name: frontend linter
     plan:
       - get: simple-repo
-      - task: hello-world
+      - task: run linter
+        file: simple-repo/config/jobs/run-frontend-tests.yml
+
+  - name: frontend tests
+    plan:
+      - get: simple-repo
+        passed: [frontend linter]
+      - task: run-tests
         file: simple-repo/config/jobs/run-frontend-tests.yml

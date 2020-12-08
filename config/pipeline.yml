@@ -1,0 +1,14 @@
+resources:
+  - name: simple-repo
+    type: git
+    source:
+      uri: https://github.com/msherman/simple.git
+      branch: master
+
+jobs:
+  - name: run-frontend-tests
+    public: true
+    plan:
+      - get: simple-repo
+      - task: hello-world
+        file: simple/config/jobs/run-frontend-tests.yml

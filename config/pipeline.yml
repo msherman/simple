@@ -11,4 +11,4 @@ jobs:
     plan:
       - get: simple-repo
       - task: hello-world
-        file: simple/config/jobs/run-frontend-tests.yml
+        file: simple-repo/config/jobs/run-frontend-tests.yml

@@ -15,6 +15,45 @@ jobs:
   - name: frontend-tests
     plan:
       - get: simple-repo
+        trigger: true
         passed: [frontend-linter]
       - task: run-tests
-        file: simple-repo/config/jobs/run-frontend-tests.yml
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: frontend-docker-image
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [frontend-tests]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: backend-unit-tests
+    plan:
+      - get: simple-repo
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: backend-integration-tests
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [backend-unit-tests]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: backend-docker-image
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [backend-integration-tests]
+      - task: run-tests
+        file: simple-repo/config/jobs/no-op.yml
+
+  - name: deploy-dev
+    plan:
+      - get: simple-repo
+        trigger: true
+        passed: [backend-docker-image, frontend-docker-image]
+      - task: deploy
+        file: simple-repo/config/jobs/no-op.yml

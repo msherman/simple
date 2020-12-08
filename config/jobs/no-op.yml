@@ -1,0 +1,12 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source: {repository: ubuntu}
+
+inputs:
+  - name: simple-repo
+
+run:
+  path: simple-repo/config/jobs/no-op.sh

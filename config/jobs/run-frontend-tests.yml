@@ -5,5 +5,8 @@ image_resource:
   type: docker-image
   source: {repository: ubuntu}
 
+input:
+  - name: simple-repo
+
 run:
   path: simple-repo/config/jobs/run-frontend-tests.sh
